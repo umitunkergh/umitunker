@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from models import SearchRequest, SearchResponse, SearchHistory
 from ai_service import AIService
+from admin_routes import create_admin_router
 from typing import List
 import uuid
 from datetime import datetime
@@ -21,7 +22,11 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Create the main app without a prefix
-app = FastAPI()
+app = FastAPI(
+    title="UU AI Sales Dictionary API",
+    description="AI-powered Turkish/English sales terminology dictionary",
+    version="1.0.0"
+)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -29,6 +34,8 @@ api_router = APIRouter(prefix="/api")
 # Initialize AI Service
 ai_service = AIService()
 
+# Create admin router
+admin_router = create_admin_router(db)
 
 # Health check endpoint
 @api_router.get("/")
@@ -137,8 +144,9 @@ async def get_popular_searches(limit: int = 10):
         raise HTTPException(status_code=500, detail="Popüler aramalar getirilirken bir hata oluştu")
 
 
-# Include the router in the main app
+# Include the routers in the main app
 app.include_router(api_router)
+app.include_router(admin_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
