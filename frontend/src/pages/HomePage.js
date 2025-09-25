@@ -269,7 +269,7 @@ const HomePage = () => {
             <div>
               <h4 className="font-medium text-gray-900 mb-4">İletişim</h4>
               <div className="space-y-2">
-                <p className="body-standard text-gray-600">info@uuai.com.tr</p>
+                <p className="body-standard text-gray-600">info@umitunker.com</p>
                 <p className="body-standard text-gray-600">www.umitunker.com</p>
               </div>
             </div>
