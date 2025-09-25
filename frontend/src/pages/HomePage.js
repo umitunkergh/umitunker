@@ -48,23 +48,16 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b border-gray-200 py-4">
-        <div className="container">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <BookOpen className="w-8 h-8 text-blue-600" />
-              <div>
-                <h1 className="text-xl font-medium text-gray-900">UU AI</h1>
-                <p className="text-sm text-gray-600">Ümit ÜNKER Satış Sözlüğü</p>
-              </div>
+      {/* Header - Simple Google-like */}
+      <header className="py-6">
+        <div className="container text-center">
+          <div className="flex items-center justify-center space-x-3 mb-2">
+            <BookOpen className="w-10 h-10 text-blue-600" />
+            <div>
+              <h1 className="text-2xl font-normal text-gray-900">UU AI</h1>
             </div>
-            <nav className="flex space-x-6">
-              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Ana Sayfa</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Hakkında</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">İletişim</a>
-            </nav>
           </div>
+          <p className="text-sm text-gray-600">Ümit ÜNKER Satış Sözlüğü</p>
         </div>
       </header>
 
