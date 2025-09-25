@@ -61,19 +61,15 @@ const HomePage = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section - Google Style */}
       <main className="flex-1">
-        <section className="py-20 text-center">
+        <section className="py-16 text-center">
           <div className="container-narrow">
             <div className="animate-slide-up">
-              <h1 className="display-hero mb-6">
+              <h1 className="display-hero mb-8">
                 Satış Dünyasında Her Sorunun<br />
                 <span className="text-blue-600">AI Destekli Yanıtı</span>
               </h1>
-              <p className="body-large mb-12 text-gray-600">
-                Satış terminolojisinden stratejilere, KPI'lardan müşteri yönetimine kadar 
-                her konuda hızlı ve örnekli açıklamalar alın.
-              </p>
             </div>
 
             {/* Search Box */}
