@@ -1,11 +1,12 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
+from models import SearchRequest, SearchResponse, SearchHistory
+from ai_service import AIService
 from typing import List
 import uuid
 from datetime import datetime
@@ -25,32 +26,116 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Initialize AI Service
+ai_service = AIService()
 
-# Define Models
-class StatusCheck(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
+# Health check endpoint
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "UU AI Satış Sözlüğü API is running"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+@api_router.post("/search", response_model=SearchResponse)
+async def search_sales_question(request: SearchRequest):
+    """
+    Process sales questions using AI and return structured answers
+    """
+    try:
+        # Get AI response
+        ai_response = await ai_service.get_sales_answer(request.question, request.sessionId)
+        
+        # Detect language
+        language = ai_service.detect_language(request.question)
+        
+        # Create response object
+        response = SearchResponse(
+            sessionId=request.sessionId,
+            question=request.question,
+            answer=ai_response['answer'],
+            examples=ai_response['examples'],
+            relatedTerms=ai_response['relatedTerms'],
+            language=language,
+            timestamp=datetime.utcnow()
+        )
+        
+        # Save to database
+        search_history = SearchHistory(
+            sessionId=request.sessionId,
+            question=request.question,
+            answer=ai_response['answer'],
+            examples=ai_response['examples'],
+            relatedTerms=ai_response['relatedTerms'],
+            language=language,
+            timestamp=datetime.utcnow(),
+            createdAt=datetime.utcnow()
+        )
+        
+        await db.search_history.insert_one(search_history.dict())
+        
+        return response
+        
+    except Exception as e:
+        logging.error(f"Search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Arama işlemi sırasında bir hata oluştu: {str(e)}")
+
+
+@api_router.get("/search/recent/{session_id}", response_model=List[SearchHistory])
+async def get_recent_searches(session_id: str, limit: int = 10):
+    """
+    Get recent search history for a session
+    """
+    try:
+        cursor = db.search_history.find(
+            {"sessionId": session_id}
+        ).sort("createdAt", -1).limit(limit)
+        
+        search_history = await cursor.to_list(length=limit)
+        
+        return [SearchHistory(**search) for search in search_history]
+        
+    except Exception as e:
+        logging.error(f"Recent search error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Son aramalar getirilirken bir hata oluştu")
+
+
+@api_router.get("/search/popular", response_model=List[dict])
+async def get_popular_searches(limit: int = 10):
+    """
+    Get most popular search terms
+    """
+    try:
+        pipeline = [
+            {
+                "$group": {
+                    "_id": "$question",
+                    "count": {"$sum": 1},
+                    "lastSearched": {"$max": "$createdAt"}
+                }
+            },
+            {
+                "$sort": {"count": -1, "lastSearched": -1}
+            },
+            {
+                "$limit": limit
+            }
+        ]
+        
+        popular_searches = await db.search_history.aggregate(pipeline).to_list(length=limit)
+        
+        return [
+            {
+                "question": search["_id"],
+                "count": search["count"],
+                "lastSearched": search["lastSearched"]
+            }
+            for search in popular_searches
+        ]
+        
+    except Exception as e:
+        logging.error(f"Popular search error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Popüler aramalar getirilirken bir hata oluştu")
+
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -58,7 +143,7 @@ app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

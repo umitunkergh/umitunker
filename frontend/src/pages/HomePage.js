@@ -1,43 +1,47 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, BookOpen, TrendingUp, Users, Target, BarChart3 } from "lucide-react";
-import { mockData } from "../data/mock";
+import { searchAPI, getRecentSearches } from "../services/api";
 
 const HomePage = () => {
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
+  const [error, setError] = useState(null);
+
+  // Load recent searches on component mount
+  useEffect(() => {
+    loadRecentSearches();
+  }, []);
+
+  const loadRecentSearches = async () => {
+    try {
+      const recent = await getRecentSearches(5);
+      setRecentSearches(recent.map(item => item.question));
+    } catch (error) {
+      console.error('Failed to load recent searches:', error);
+    }
+  };
 
   const handleSearch = async (searchQuery = query) => {
     if (!searchQuery.trim()) return;
 
     setLoading(true);
+    setError(null);
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Find mock answer
-    const mockAnswer = mockData.find(item => 
-      item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      searchQuery.toLowerCase().includes(item.question.toLowerCase())
-    );
-    
-    const result = mockAnswer || {
-      question: searchQuery,
-      answer: `"${searchQuery}" hakkında detaylı bilgi burada görünecek. AI sistemimiz satış terminolojisi, stratejiler ve örneklerle size kapsamlı yanıtlar sunacak.`,
-      examples: [
-        "Örnek senaryo ve açıklama burada yer alacak",
-        "Pratik uygulama örnekleri gösterilecek"
-      ],
-      relatedTerms: ["İlgili terim 1", "İlgili terim 2"]
-    };
-
-    setAnswer(result);
-    setLoading(false);
-    
-    // Add to recent searches
-    if (!recentSearches.includes(searchQuery)) {
-      setRecentSearches(prev => [searchQuery, ...prev.slice(0, 4)]);
+    try {
+      const result = await searchAPI(searchQuery);
+      setAnswer(result);
+      
+      // Add to recent searches if not already present
+      if (!recentSearches.includes(searchQuery)) {
+        setRecentSearches(prev => [searchQuery, ...prev.slice(0, 4)]);
+      }
+    } catch (err) {
+      setError(err.message);
+      console.error('Search error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,6 +85,7 @@ const HomePage = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                disabled={loading}
               />
               <button 
                 className="search-button"
@@ -99,6 +104,19 @@ const HomePage = () => {
               </button>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg animate-slide-up">
+                <p className="text-red-700">{error}</p>
+                <button
+                  onClick={() => setError(null)}
+                  className="mt-2 text-sm text-red-600 hover:text-red-800"
+                >
+                  Kapat
+                </button>
+              </div>
+            )}
+
             {/* Quick Search Suggestions */}
             <div className="mt-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <p className="body-small mb-4 text-gray-500">Popüler aramalar:</p>
@@ -108,6 +126,7 @@ const HomePage = () => {
                     key={index}
                     onClick={() => handleQuickSearch(term)}
                     className="btn-secondary text-sm"
+                    disabled={loading}
                   >
                     {term}
                   </button>
@@ -123,14 +142,14 @@ const HomePage = () => {
             <div className="container-narrow">
               <div className="answer-card animate-slide-up">
                 <h2 className="heading-medium mb-4 text-gray-900">{answer.question}</h2>
-                <div className="body-standard mb-6 text-gray-700 leading-relaxed">
+                <div className="body-standard mb-6 text-gray-700 leading-relaxed whitespace-pre-line">
                   {answer.answer}
                 </div>
                 
                 {answer.examples && answer.examples.length > 0 && (
                   <div className="mb-6">
                     <h3 className="font-medium text-gray-900 mb-3">📚 Örnekler:</h3>
-                    <ul className="space-y-2">
+                    <ul className="space-y-3">
                       {answer.examples.map((example, index) => (
                         <li key={index} className="body-standard text-gray-600 pl-4 border-l-2 border-blue-200">
                           {example}
@@ -149,6 +168,7 @@ const HomePage = () => {
                           key={index}
                           onClick={() => handleQuickSearch(term)}
                           className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm hover:bg-blue-100 transition-colors"
+                          disabled={loading}
                         >
                           {term}
                         </button>
@@ -196,9 +216,9 @@ const HomePage = () => {
 
               <div className="text-center p-6 rounded-lg border border-gray-200 hover:shadow-lg transition-all">
                 <Users className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                <h3 className="heading-medium mb-3">Türkçe Destek</h3>
+                <h3 className="heading-medium mb-3">Çok Dilli Destek</h3>
                 <p className="body-standard text-gray-600">
-                  Türkiye pazarına özel örnekler ve açıklamalar
+                  Hangi dilde sorarsaniz, o dilde cevap alın
                 </p>
               </div>
 
@@ -232,6 +252,7 @@ const HomePage = () => {
                     key={index}
                     onClick={() => handleQuickSearch(search)}
                     className="btn-secondary text-sm"
+                    disabled={loading}
                   >
                     {search}
                   </button>
