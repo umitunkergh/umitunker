@@ -1,0 +1,25 @@
+name: "uuai-sales-dictionary"
+description: "UU AI Satış Sözlüğü - AI Destekli Satış Terminolojisi Platformu"
+
+frontend:
+  framework: "react"
+  build_command: "yarn build"
+  build_dir: "frontend"
+  output_dir: "build"
+  public_path: "/uuai"
+  
+backend:
+  framework: "fastapi"
+  build_dir: "backend"
+  main_file: "server.py"
+  
+routing:
+  base_path: "/uuai"
+  
+domain:
+  custom_domain: "umitunker.com"
+  path_prefix: "/uuai"
+
+environment:
+  - REACT_APP_BACKEND_URL=/api
+  - PUBLIC_URL=/uuai
