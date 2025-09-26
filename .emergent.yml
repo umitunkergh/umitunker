@@ -6,7 +6,6 @@ frontend:
   build_command: "yarn build"
   build_dir: "frontend"
   output_dir: "build"
-  public_path: "/uuai"
   
 backend:
   framework: "fastapi"
@@ -15,11 +14,8 @@ backend:
   
 routing:
   base_path: "/uuai"
+  fallback: "index.html"
   
 domain:
   custom_domain: "umitunker.com"
   path_prefix: "/uuai"
-
-environment:
-  - REACT_APP_BACKEND_URL=/api
-  - PUBLIC_URL=/uuai
