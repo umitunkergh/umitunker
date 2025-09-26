@@ -7,10 +7,11 @@ import AdminDashboard from "./pages/AdminDashboard";
 function App() {
   return (
     <div className="App">
-      <BrowserRouter basename="/uuai">
+      <BrowserRouter>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/uuai" element={<HomePage />} />
+          <Route path="/uuai/" element={<HomePage />} />
+          <Route path="/uuai/admin" element={<AdminDashboard />} />
         </Routes>
       </BrowserRouter>
     </div>
