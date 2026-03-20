@@ -78,7 +78,7 @@ async def search_sales_question(request: SearchRequest):
             createdAt=datetime.utcnow()
         )
         
-        await db.search_history.insert_one(search_history.dict())
+        await db.search_history.insert_one(search_history.model_dump())
         
         return response
         
@@ -98,8 +98,12 @@ async def get_recent_searches(session_id: str, limit: int = 10):
         ).sort("createdAt", -1).limit(limit)
         
         search_history = await cursor.to_list(length=limit)
-        
-        return [SearchHistory(**search) for search in search_history]
+
+        result = []
+        for search in search_history:
+            search.pop('_id', None)
+            result.append(SearchHistory(**search))
+        return result
         
     except Exception as e:
         logging.error(f"Recent search error: {str(e)}")
