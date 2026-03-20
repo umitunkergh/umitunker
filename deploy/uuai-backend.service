@@ -1,0 +1,15 @@
+[Unit]
+Description=UU AI Sales Dictionary Backend
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/umitunker/backend
+EnvironmentFile=/var/www/umitunker/backend/.env
+ExecStart=/var/www/umitunker/venv/bin/uvicorn server:app --host 127.0.0.1 --port 8001 --workers 2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
