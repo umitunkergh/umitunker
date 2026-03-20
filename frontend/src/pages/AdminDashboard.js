@@ -1,12 +1,66 @@
 import React, { useState, useEffect } from "react";
-import { 
+import {
   BarChart3, Users, Search, TrendingUp, Globe, Calendar,
   Trash2, RefreshCw, Eye, Clock
 } from "lucide-react";
-import axios from 'axios';
+import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api/admin`;
+
+const TABS = [
+  { id: "dashboard",  label: "Dashboard",        icon: BarChart3  },
+  { id: "analytics",  label: "Analytics",         icon: TrendingUp },
+  { id: "questions",  label: "Popüler Sorular",   icon: Search     },
+  { id: "sessions",   label: "Oturumlar",          icon: Users      },
+  { id: "settings",   label: "Ayarlar",            icon: Globe      },
+];
+
+/* ──────────────────────────────────────────── */
+/*  Sub-components                              */
+/* ──────────────────────────────────────────── */
+
+const STAT_COLORS = {
+  blue:   { bg: "rgba(99,102,241,0.08)",  accent: "#6366F1",  text: "#4F46E5"  },
+  green:  { bg: "rgba(16,185,129,0.08)",  accent: "#10B981",  text: "#059669"  },
+  purple: { bg: "rgba(139,92,246,0.08)",  accent: "#8B5CF6",  text: "#7C3AED"  },
+  orange: { bg: "rgba(245,158,11,0.08)",  accent: "#F59E0B",  text: "#D97706"  },
+};
+
+const StatCard = ({ title, value, icon: Icon, description, color = "blue" }) => {
+  const c = STAT_COLORS[color] || STAT_COLORS.blue;
+  return (
+    <div style={{
+      background: "#FFFFFF",
+      border: "1px solid #E2E8F0",
+      borderRadius: 16,
+      padding: "24px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 16,
+      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+      transition: "box-shadow 0.2s ease",
+    }}>
+      <div>
+        <p style={{ fontSize: 13, fontWeight: 500, color: "#64748B", margin: "0 0 6px" }}>{title}</p>
+        <p style={{ fontSize: 32, fontWeight: 700, color: c.text, margin: "0 0 4px", lineHeight: 1 }}>{value}</p>
+        {description && <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>{description}</p>}
+      </div>
+      <div style={{
+        width: 52, height: 52, borderRadius: 14,
+        background: c.bg,
+        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      }}>
+        <Icon size={24} color={c.accent} />
+      </div>
+    </div>
+  );
+};
+
+/* ──────────────────────────────────────────── */
+/*  Main Component                              */
+/* ──────────────────────────────────────────── */
 
 const AdminDashboard = () => {
   const [dashboardStats, setDashboardStats] = useState(null);
@@ -15,7 +69,7 @@ const AdminDashboard = () => {
   const [languageDistribution, setLanguageDistribution] = useState({});
   const [sessionActivity, setSessionActivity] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   useEffect(() => {
     loadDashboardData();
@@ -29,7 +83,7 @@ const AdminDashboard = () => {
         axios.get(`${API}/analytics/trends?days=7`),
         axios.get(`${API}/analytics/popular?limit=15`),
         axios.get(`${API}/analytics/languages`),
-        axios.get(`${API}/sessions/activity?limit=30`)
+        axios.get(`${API}/sessions/activity?limit=30`),
       ]);
 
       setDashboardStats(statsRes.data);
@@ -38,199 +92,224 @@ const AdminDashboard = () => {
       setLanguageDistribution(langRes.data.language_distribution);
       setSessionActivity(sessionsRes.data.session_activity);
     } catch (error) {
-      console.error('Admin data loading error:', error);
+      console.error("Admin data loading error:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const cleanupOldData = async (days) => {
-    if (!window.confirm(`${days} günden eski tüm verileri silmek istediğinize emin misiniz?`)) {
-      return;
-    }
+    if (!window.confirm(`${days} günden eski tüm verileri silmek istediğinize emin misiniz?`)) return;
 
     try {
       const response = await axios.delete(`${API}/data/cleanup?older_than_days=${days}`);
       alert(`Başarılı: ${response.data.deleted_count} kayıt silindi`);
       loadDashboardData();
     } catch (error) {
-      alert('Veri temizleme hatası: ' + (error.response?.data?.detail || error.message));
+      alert("Veri temizleme hatası: " + (error.response?.data?.detail || error.message));
     }
   };
 
-  const StatCard = ({ title, value, icon: Icon, description, color = "blue" }) => (
-    <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className={`text-3xl font-bold text-${color}-600`}>{value}</p>
-          {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
-        </div>
-        <Icon className={`w-12 h-12 text-${color}-600 opacity-60`} />
-      </div>
-    </div>
-  );
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-          <span className="text-gray-600">Yükleniyor...</span>
+      <div style={{
+        minHeight: "100vh", background: "#F8FAFF",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <RefreshCw size={22} color="#6366F1" style={{ animation: "spin 1s linear infinite" }} />
+          <span style={{ color: "#64748B", fontSize: 16 }}>Yükleniyor…</span>
         </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
+  /* ── shared styles ── */
+  const card = {
+    background: "#FFFFFF",
+    border: "1px solid #E2E8F0",
+    borderRadius: 16,
+    overflow: "hidden",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">UU AI Yönetim Paneli</h1>
-            <p className="text-gray-600">Satış Sözlüğü Analytics ve Yönetim</p>
-          </div>
-          <button
-            onClick={loadDashboardData}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Yenile</span>
-          </button>
+    <div style={{ minHeight: "100vh", background: "#F8FAFF" }}>
+
+      {/* ── HEADER ── */}
+      <header style={{
+        background: "#FFFFFF",
+        borderBottom: "1px solid #E2E8F0",
+        padding: "0 24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        height: 64,
+      }}>
+        <div>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: 0 }}>
+            UU AI Yönetim Paneli
+          </h1>
+          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>
+            Satış Sözlüğü Analytics ve Yönetim
+          </p>
         </div>
+        <button
+          onClick={loadDashboardData}
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "9px 18px",
+            background: "linear-gradient(135deg, #6366F1, #3B82F6)",
+            color: "white", border: "none", borderRadius: 10,
+            fontSize: 14, fontWeight: 600, cursor: "pointer",
+            boxShadow: "0 2px 8px rgba(99,102,241,0.3)",
+          }}
+        >
+          <RefreshCw size={15} />
+          Yenile
+        </button>
       </header>
 
-      {/* Navigation Tabs */}
-      <nav className="bg-white border-b border-gray-200 px-6">
-        <div className="flex space-x-8">
-          {[
-            { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-            { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-            { id: 'questions', label: 'Popüler Sorular', icon: Search },
-            { id: 'sessions', label: 'Oturumlar', icon: Users },
-            { id: 'settings', label: 'Ayarlar', icon: Globe }
-          ].map((tab) => (
+      {/* ── TAB NAV ── */}
+      <nav style={{
+        background: "#FFFFFF",
+        borderBottom: "1px solid #E2E8F0",
+        padding: "0 24px",
+        display: "flex",
+        overflowX: "auto",
+      }}>
+        {TABS.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 py-4 px-2 border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              style={{
+                display: "flex", alignItems: "center", gap: 7,
+                padding: "14px 16px",
+                fontSize: 14, fontWeight: active ? 600 : 400,
+                color: active ? "#4F46E5" : "#64748B",
+                background: "none", border: "none", cursor: "pointer",
+                borderBottom: active ? "2px solid #6366F1" : "2px solid transparent",
+                whiteSpace: "nowrap", transition: "color 0.2s",
+              }}
             >
-              <tab.icon className="w-4 h-4" />
-              <span>{tab.label}</span>
+              <tab.icon size={15} />
+              {tab.label}
             </button>
-          ))}
-        </div>
+          );
+        })}
       </nav>
 
-      <main className="p-6">
+      {/* ── MAIN ── */}
+      <main style={{ padding: "28px 24px", maxWidth: 1200, margin: "0 auto" }}>
+
         {/* Dashboard Tab */}
-        {activeTab === 'dashboard' && dashboardStats && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatCard
-                title="Toplam Arama"
-                value={dashboardStats.totalSearches}
-                icon={Search}
-                description="Tüm zamanlar"
-                color="blue"
-              />
-              <StatCard
-                title="Bugünkü Aramalar"
-                value={dashboardStats.searchesToday}
-                icon={TrendingUp}
-                description="Son 24 saat"
-                color="green"
-              />
-              <StatCard
-                title="Aktif Oturumlar"
-                value={dashboardStats.uniqueSessions}
-                icon={Users}
-                description="Benzersiz kullanıcılar"
-                color="purple"
-              />
-              <StatCard
-                title="Ortalama/Oturum"
-                value={dashboardStats.avgSearchesPerSession}
-                icon={BarChart3}
-                description="Arama sayısı"
-                color="orange"
-              />
+        {activeTab === "dashboard" && dashboardStats && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
+              <StatCard title="Toplam Arama"     value={dashboardStats.totalSearches}       icon={Search}   description="Tüm zamanlar"          color="blue"   />
+              <StatCard title="Bugünkü Aramalar" value={dashboardStats.searchesToday}        icon={TrendingUp} description="Son 24 saat"         color="green"  />
+              <StatCard title="Aktif Oturumlar"  value={dashboardStats.uniqueSessions}       icon={Users}    description="Benzersiz kullanıcılar" color="purple" />
+              <StatCard title="Ortalama/Oturum"  value={dashboardStats.avgSearchesPerSession} icon={BarChart3} description="Arama sayısı"       color="orange" />
             </div>
 
-            {/* Trends Chart */}
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold mb-4">7 Günlük Trend</h3>
-              <div className="grid grid-cols-7 gap-2">
-                {trends.map((day, index) => (
-                  <div key={index} className="text-center">
-                    <div className="text-xs text-gray-500 mb-2">
-                      {new Date(day.date).toLocaleDateString('tr-TR', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </div>
-                    <div 
-                      className="bg-blue-100 rounded-t"
-                      style={{ 
-                        height: `${Math.max(day.count * 4, 10)}px`,
-                        backgroundColor: day.count > 0 ? '#3B82F6' : '#E5E7EB'
-                      }}
-                    ></div>
-                    <div className="text-sm font-medium mt-1">{day.count}</div>
-                  </div>
-                ))}
+            {/* Trends chart */}
+            <div style={card}>
+              <div style={{ padding: "20px 24px", borderBottom: "1px solid #F1F5F9" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0F172A", margin: 0 }}>7 Günlük Trend</h3>
+              </div>
+              <div style={{ padding: 24 }}>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 120 }}>
+                  {trends.map((day, i) => {
+                    const max = Math.max(...trends.map((d) => d.count), 1);
+                    const h = Math.max((day.count / max) * 100, 6);
+                    return (
+                      <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748B" }}>{day.count}</span>
+                        <div style={{
+                          width: "100%",
+                          height: `${h}%`,
+                          borderRadius: "6px 6px 0 0",
+                          background: day.count > 0
+                            ? "linear-gradient(180deg, #6366F1, #3B82F6)"
+                            : "#E2E8F0",
+                          transition: "height 0.4s ease",
+                        }} />
+                        <span style={{ fontSize: 11, color: "#94A3B8", whiteSpace: "nowrap" }}>
+                          {new Date(day.date).toLocaleDateString("tr-TR", { month: "short", day: "numeric" })}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* Analytics Tab */}
-        {activeTab === 'analytics' && (
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold mb-4">Dil Dağılımı</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {Object.entries(languageDistribution).map(([lang, data]) => (
-                  <div key={lang} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <span className="font-medium">{lang === 'tr' ? 'Türkçe' : lang === 'en' ? 'İngilizce' : lang}</span>
-                      <div className="text-sm text-gray-500">{data.count} arama</div>
+        {activeTab === "analytics" && (
+          <div style={card}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #F1F5F9" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0F172A", margin: 0 }}>Dil Dağılımı</h3>
+            </div>
+            <div style={{ padding: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+              {Object.entries(languageDistribution).map(([lang, data]) => (
+                <div key={lang} style={{
+                  padding: "20px",
+                  background: "#F8FAFF",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: "#0F172A", fontSize: 15 }}>
+                      {lang === "tr" ? "Türkçe" : lang === "en" ? "İngilizce" : lang}
                     </div>
-                    <div className="text-2xl font-bold text-blue-600">{data.percentage}%</div>
+                    <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>{data.count} arama</div>
                   </div>
-                ))}
-              </div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: "#4F46E5" }}>{data.percentage}%</div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* Popular Questions Tab */}
-        {activeTab === 'questions' && (
-          <div className="bg-white rounded-lg border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">En Popüler Sorular</h3>
+        {activeTab === "questions" && (
+          <div style={card}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #F1F5F9" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0F172A", margin: 0 }}>En Popüler Sorular</h3>
             </div>
-            <div className="divide-y divide-gray-200">
-              {popularQuestions.map((question, index) => (
-                <div key={index} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{question.question}</p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Son sorulma: {new Date(question.lastAsked).toLocaleDateString('tr-TR')}
-                        {' • '}
-                        {question.language === 'tr' ? 'Türkçe' : 'İngilizce'}
-                      </p>
-                    </div>
-                    <div className="text-center ml-4">
-                      <div className="text-2xl font-bold text-blue-600">{question.count}</div>
-                      <div className="text-xs text-gray-500">kez soruldu</div>
-                    </div>
+            <div>
+              {popularQuestions.map((q, i) => (
+                <div key={i} style={{
+                  padding: "16px 24px",
+                  borderBottom: i < popularQuestions.length - 1 ? "1px solid #F1F5F9" : "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 16,
+                  transition: "background 0.15s",
+                }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#F8FAFF")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 500, color: "#0F172A", margin: "0 0 4px", fontSize: 15 }}>{q.question}</p>
+                    <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>
+                      Son sorulma: {new Date(q.lastAsked).toLocaleDateString("tr-TR")}
+                      {" · "}
+                      {q.language === "tr" ? "Türkçe" : "İngilizce"}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: "center", flexShrink: 0 }}>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: "#4F46E5" }}>{q.count}</div>
+                    <div style={{ fontSize: 11, color: "#94A3B8" }}>kez soruldu</div>
                   </div>
                 </div>
               ))}
@@ -239,29 +318,40 @@ const AdminDashboard = () => {
         )}
 
         {/* Sessions Tab */}
-        {activeTab === 'sessions' && (
-          <div className="bg-white rounded-lg border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">Son Oturum Aktiviteleri</h3>
+        {activeTab === "sessions" && (
+          <div style={card}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #F1F5F9" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0F172A", margin: 0 }}>Son Oturum Aktiviteleri</h3>
             </div>
-            <div className="divide-y divide-gray-200">
-              {sessionActivity.map((session, index) => (
-                <div key={index} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">Oturum: {session.sessionId.substring(0, 20)}...</p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {session.searchCount} arama • {Math.round(session.duration)} dakika süre
-                      </p>
-                      <div className="text-xs text-gray-400 mt-2">
-                        Örnek sorular: {session.sampleQuestions.slice(0, 2).join(', ')}
-                      </div>
-                    </div>
-                    <div className="text-center ml-4">
-                      <div className="text-sm text-gray-500">Son aktivite</div>
-                      <div className="text-sm font-medium">
-                        {new Date(session.lastSearch).toLocaleString('tr-TR')}
-                      </div>
+            <div>
+              {sessionActivity.map((s, i) => (
+                <div key={i} style={{
+                  padding: "16px 24px",
+                  borderBottom: i < sessionActivity.length - 1 ? "1px solid #F1F5F9" : "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 16,
+                  transition: "background 0.15s",
+                }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#F8FAFF")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 500, color: "#0F172A", margin: "0 0 4px", fontSize: 14, fontFamily: "monospace" }}>
+                      {s.sessionId.substring(0, 20)}…
+                    </p>
+                    <p style={{ fontSize: 13, color: "#64748B", margin: "0 0 4px" }}>
+                      {s.searchCount} arama · {Math.round(s.duration)} dakika süre
+                    </p>
+                    <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>
+                      {s.sampleQuestions.slice(0, 2).join(", ")}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 2 }}>Son aktivite</div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: "#0F172A" }}>
+                      {new Date(s.lastSearch).toLocaleString("tr-TR")}
                     </div>
                   </div>
                 </div>
@@ -271,39 +361,45 @@ const AdminDashboard = () => {
         )}
 
         {/* Settings Tab */}
-        {activeTab === 'settings' && (
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold mb-4">Veri Yönetimi</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+        {activeTab === "settings" && (
+          <div style={card}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #F1F5F9" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0F172A", margin: 0 }}>Veri Yönetimi</h3>
+            </div>
+            <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+              {[30, 90].map((days) => (
+                <div key={days} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "16px 20px",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: 12, gap: 16,
+                }}>
                   <div>
-                    <h4 className="font-medium">Eski Verileri Temizle (30 gün)</h4>
-                    <p className="text-sm text-gray-500">30 günden eski arama verilerini sil</p>
+                    <h4 style={{ fontWeight: 600, color: "#0F172A", margin: "0 0 4px", fontSize: 15 }}>
+                      Eski Verileri Temizle ({days} gün)
+                    </h4>
+                    <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>
+                      {days} günden eski arama verilerini sil
+                    </p>
                   </div>
                   <button
-                    onClick={() => cleanupOldData(30)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    onClick={() => cleanupOldData(days)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "9px 18px",
+                      background: "#EF4444", color: "white",
+                      border: "none", borderRadius: 10,
+                      fontSize: 14, fontWeight: 600, cursor: "pointer",
+                      flexShrink: 0, transition: "background 0.2s",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#DC2626")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "#EF4444")}
                   >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Temizle</span>
+                    <Trash2 size={15} />
+                    Temizle
                   </button>
                 </div>
-
-                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div>
-                    <h4 className="font-medium">Eski Verileri Temizle (90 gün)</h4>
-                    <p className="text-sm text-gray-500">90 günden eski arama verilerini sil</p>
-                  </div>
-                  <button
-                    onClick={() => cleanupOldData(90)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Temizle</span>
-                  </button>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
